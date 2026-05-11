@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="sk" data-theme="dark" data-color="blue">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AQ11 – Generovanie pravidiel | Strojové učenie</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+  /* ── GUL'E ────────────────────────────────────────────── */
+  .bg-canvas{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+  .grid-overlay{position:absolute;inset:0;background-image:linear-gradient(rgba(var(--accent-rgb),.035) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--accent-rgb),.035) 1px,transparent 1px);background-size:64px 64px;transition:background-image .5s}
+  .orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:.28;will-change:transform;background:var(--accent);transition:background .5s;pointer-events:none}
+  /* Orb sizes only – pozícia a pohyb riadi JavaScript */
+  .orb-1{width:680px;height:680px}
+  .orb-2{width:460px;height:460px}
+  .orb-3{width:560px;height:560px}
+  .orb-4{width:340px;height:340px}
+  .orb-5{width:300px;height:300px}
+  .orb-6{width:220px;height:220px}
+
+  /* ── REVEAL ANIMACIE ────────────────────────────────────── */
+  .reveal{opacity:0;transform:translateY(36px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}
+  .reveal-left{opacity:0;transform:translateX(-44px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}
+  .reveal-right{opacity:0;transform:translateX(44px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}
+  .reveal-scale{opacity:0;transform:scale(.9);transition:opacity .65s cubic-bezier(.22,1,.36,1),transform .65s cubic-bezier(.22,1,.36,1)}
+  .reveal-blur{opacity:0;filter:blur(10px);transform:translateY(18px);transition:opacity .8s ease,filter .8s ease,transform .8s ease}
+  .reveal.visible,.reveal-left.visible,.reveal-right.visible,.reveal-scale.visible,.reveal-blur.visible{opacity:1;transform:none;filter:none}
+
+  /* ── STAGGER PRE KARTY ────────────────────────────────── */
+  .grid-2>.card,.grid-3>.card{opacity:0;transform:translateY(30px);transition:opacity .6s cubic-bezier(.22,1,.36,1),transform .6s cubic-bezier(.22,1,.36,1),border-color .3s,box-shadow .35s}
+  .grid-2>.card.visible,.grid-3>.card.visible{opacity:1;transform:translateY(0)}
+  .grid-2>.card:nth-child(1),.grid-3>.card:nth-child(1){transition-delay:.04s}
+  .grid-2>.card:nth-child(2),.grid-3>.card:nth-child(2){transition-delay:.14s}
+  .grid-2>.card:nth-child(3),.grid-3>.card:nth-child(3){transition-delay:.24s}
+  .grid-2>.card:nth-child(4){transition-delay:.34s}
+
+  /* ── KARTA HOVER ──────────────────────────────────────── */
+  .card{transition:border-color .3s,box-shadow .35s,transform .35s cubic-bezier(.34,1.2,.64,1)!important}
+  .card:hover{transform:translateY(-4px) scale(1.012)!important}
+
+  /* ── WORKFLOW KROKY ──────────────────────────────────── */
+  .wf-step{opacity:0;transform:translateX(-32px);transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .55s cubic-bezier(.22,1,.36,1)}
+  .wf-step.visible{opacity:1;transform:none}
+  .wf-num{transition:transform .3s cubic-bezier(.34,1.4,.64,1),box-shadow .3s}
+  .wf-step:hover .wf-num{transform:scale(1.18);box-shadow:0 0 28px var(--accent-glow)}
+
+  /* ── ZOZNAMY – postupne ──────────────────────────────── */
+  .obs-list li,.feature-list li,.concl-list li{opacity:0;transform:translateX(-14px);transition:opacity .4s ease,transform .4s ease}
+  .visible .obs-list li,.visible .feature-list li,.visible .concl-list li{opacity:1;transform:none}
+  .visible .obs-list li:nth-child(1),.visible .feature-list li:nth-child(1),.visible .concl-list li:nth-child(1){transition-delay:.08s}
+  .visible .obs-list li:nth-child(2),.visible .feature-list li:nth-child(2),.visible .concl-list li:nth-child(2){transition-delay:.16s}
+  .visible .obs-list li:nth-child(3),.visible .feature-list li:nth-child(3),.visible .concl-list li:nth-child(3){transition-delay:.24s}
+  .visible .obs-list li:nth-child(4),.visible .feature-list li:nth-child(4),.visible .concl-list li:nth-child(4){transition-delay:.32s}
+  .visible .obs-list li:nth-child(5),.visible .feature-list li:nth-child(5),.visible .concl-list li:nth-child(5){transition-delay:.40s}
+  .visible .obs-list li:nth-child(6),.visible .feature-list li:nth-child(6),.visible .concl-list li:nth-child(6){transition-delay:.48s}
+
+  /* ── PROP LIST ───────────────────────────────────────── */
+  .prop{opacity:0;transform:translateX(-10px);transition:opacity .35s,transform .35s}
+  .visible .prop:nth-child(1){opacity:1;transform:none;transition-delay:.05s}
+  .visible .prop:nth-child(2){opacity:1;transform:none;transition-delay:.12s}
+  .visible .prop:nth-child(3){opacity:1;transform:none;transition-delay:.19s}
+  .visible .prop:nth-child(4){opacity:1;transform:none;transition-delay:.26s}
+  .visible .prop:nth-child(5){opacity:1;transform:none;transition-delay:.33s}
+  .visible .prop:nth-child(6){opacity:1;transform:none;transition-delay:.40s}
+
+  /* ── HERO ANIMACIE ──────────────────────────────────── */
+  .hero-tag{animation:fadeDown .8s .1s both}
+  .hero-title{animation:fadeDown .9s .25s both}
+  .hero-sub{animation:fadeDown .8s .4s both}
+  .hero-stats{animation:fadeUp .9s .55s both}
+  @keyframes fadeDown{from{opacity:0;transform:translateY(-22px)}to{opacity:1;transform:none}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+
+  /* ── LOGOTYP PULSOVANIE ─────────────────────────────── */
+  .logo-icon{animation:logoPulse 3s ease-in-out infinite}
+  @keyframes logoPulse{0%,100%{filter:drop-shadow(0 0 4px var(--accent-glow))}50%{filter:drop-shadow(0 0 14px var(--accent-glow))}}
+
+  /* ── TITLE PODTRHNUTIE ──────────────────────────────── */
+  .section-title{position:relative;display:inline-block}
+  .section-title::after{content:'';position:absolute;bottom:-4px;left:0;height:2px;background:var(--accent);width:0;transition:width .65s cubic-bezier(.22,1,.36,1) .2s;box-shadow:0 0 8px var(--accent-glow)}
+  .visible .section-title::after{width:100%}
+
+  /* ── METRICKÉ KARTY ─────────────────────────────────── */
+  .metric-card{transition:border-color .3s,box-shadow .35s,transform .3s cubic-bezier(.34,1.2,.64,1)}
+  .metric-card:hover{transform:translateY(-4px) scale(1.04)}
+
+  /* ── PRAVIDLÁ – slide ───────────────────────────────── */
+  .rule-card{transition:border-color .3s,box-shadow .3s,transform .3s cubic-bezier(.34,1.2,.64,1)}
+  .rule-card:hover{transform:translateX(6px)}
+
+  /* ── ZÁVER KARTY ────────────────────────────────────── */
+  .concl-card.positive{border-color:rgba(34,197,94,.2)}
+  .concl-card.negative{border-color:rgba(239,68,68,.2)}
+  .concl-card.neutral{border-color:rgba(var(--accent-rgb),.2)}
+  .concl-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .concl-header h3{margin:0}
+
+  /* ── MINI BAR ANIMACIA ──────────────────────────────── */
+  .mb-bar::before{transition:width 1.3s cubic-bezier(.22,1,.36,1);width:0}
+  .visible .mb-bar::before{width:var(--w)}
+
+  /* ── IKONY V KARTACH ────────────────────────────────── */
+  .card-icon-svg,.obs-icon-svg{width:48px;height:48px;border-radius:12px;background:var(--accent-dim);border:1px solid var(--accent-glow);display:flex;align-items:center;justify-content:center;color:var(--accent);margin-bottom:16px;transition:transform .3s cubic-bezier(.34,1.4,.64,1),box-shadow .3s}
+  .card:hover .card-icon-svg,.card:hover .obs-icon-svg{transform:scale(1.1) rotate(5deg);box-shadow:0 0 20px var(--accent-dim)}
+
+  /* ── SCATTER TOOLTIP ────────────────────────────────── */
+  .scatter-tooltip{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--accent-glow);border-radius:12px;padding:12px 16px;font-family:'Space Mono',monospace;font-size:11px;color:var(--text);backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.4),0 0 20px var(--accent-dim);pointer-events:none;opacity:0;transform:translateY(6px) scale(.97);transition:opacity .18s,transform .18s;min-width:168px;line-height:1.8}
+  .scatter-tooltip.show{opacity:1;transform:translateY(0) scale(1)}
+  .tt-row{display:flex;justify-content:space-between;gap:14px}
+  .tt-key{color:var(--text-dimmer)}
+  .tt-val{color:var(--accent);font-weight:700}
+  .tt-c0{color:#ef4444;font-weight:700}
+  .tt-c1{color:var(--accent);font-weight:700}
+
+  /* ── FILTER TLACIDLA ────────────────────────────────── */
+  .dm-controls{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .class-filter{display:flex;gap:4px}
+  .cf-btn{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--text-dim);font-family:'Space Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s}
+  .cf-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .cf-btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+  th.sortable{cursor:pointer;user-select:none}
+  th.sortable:hover{color:var(--accent)}
+
+  /* ── SCROLL INDIKATOR ───────────────────────────────── */
+  .scroll-indicator{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:50;display:flex;flex-direction:column;align-items:center;gap:6px;opacity:1;transition:opacity .5s;font-family:'Space Mono',monospace;font-size:10px;color:var(--text-dimmer);pointer-events:none}
+  .scroll-indicator.hidden{opacity:0}
+  .scroll-chevron{animation:chevBounce 1.4s ease-in-out infinite}
+  @keyframes chevBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
+  </style>
+</head>
+<body>
+
+<!-- Tooltip pre scatter plot -->
+<div id="scatterTooltip" class="scatter-tooltip"></div>
+
+<!-- Scroll indikátor -->
+<div class="scroll-indicator" id="scrollInd">
+  <span>Skrolovať</span>
+  <svg class="scroll-chevron" width="16" height="10" viewBox="0 0 16 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="1 1 8 9 15 1"/></svg>
+</div>
+
+<!-- Animované pozadie -->
+<div class="bg-canvas" id="bgCanvas">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="orb orb-4"></div>
+  <div class="orb orb-5"></div>
+  <div class="orb orb-6"></div>
+  <div class="grid-overlay"></div>
+</div>
+
+<!-- Hlavička -->
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="logo">
+      <svg class="logo-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polygon points="12 2 22 8.5 22 15.5 12 21 2 15.5 2 8.5"/>
+      </svg>
+      <span class="logo-text">AQ<span class="accent">11</span></span>
+    </div>
+    <nav class="breadcrumb">
+      <span>Strojové učenie</span><span class="sep">›</span><span>Generovanie pravidiel</span>
+    </nav>
+  </div>
+  <div class="topbar-right">
+    <button class="theme-btn" id="themeToggle" title="Prepnúť tému">
+      <svg class="sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="12" cy="12" r="4"/>
+        <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+        <line x1="4.22" y1="4.22" x2="7.05" y2="7.05"/><line x1="16.95" y1="16.95" x2="19.78" y2="19.78"/>
+        <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="7.05" y2="16.95"/><line x1="16.95" y1="7.05" x2="19.78" y2="4.22"/>
+      </svg>
+      <svg class="moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+      <div class="thumb"></div>
+    </button>
+    <button class="palette-btn" id="paletteBtn" title="Farebná téma">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <circle cx="12" cy="8" r="1.5" fill="currentColor" stroke="none"/>
+        <circle cx="8" cy="13" r="1.5" fill="currentColor" stroke="none"/>
+        <circle cx="16" cy="13" r="1.5" fill="currentColor" stroke="none"/>
+        <circle cx="12" cy="17" r="1.5" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
+    <div class="palette-panel" id="palettePanel">
+      <span class="palette-label">Farebná téma</span>
+      <div class="swatches">
+        <button class="swatch active" data-color="blue"      style="--sc:#3b82f6" title="Modrá"></button>
+        <button class="swatch"        data-color="green"     style="--sc:#22c55e" title="Zelená"></button>
+        <button class="swatch"        data-color="turquoise" style="--sc:#06b6d4" title="Tyrkysová"></button>
+        <button class="swatch"        data-color="orange"    style="--sc:#f97316" title="Oranžová"></button>
+        <button class="swatch"        data-color="red"       style="--sc:#ef4444" title="Červená"></button>
+        <button class="swatch"        data-color="lava"      style="--sc:#ff4500" title="Láva"></button>
+        <button class="swatch"        data-color="purple"    style="--sc:#a855f7" title="Fialová"></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Bočná navigácia -->
+<nav class="sidenav" id="sidenav">
+  <a href="#intro"          class="nav-item active"><span class="nav-dot"></span>Úvod</a>
+  <a href="#workflow"       class="nav-item"><span class="nav-dot"></span>Postup</a>
+  <a href="#dataset"        class="nav-item"><span class="nav-dot"></span>Dataset</a>
+  <a href="#experiments"    class="nav-item"><span class="nav-dot"></span>Experimenty</a>
+  <a href="#results"        class="nav-item"><span class="nav-dot"></span>Výsledky</a>
+  <a href="#visualizations" class="nav-item"><span class="nav-dot"></span>Vizualizácie</a>
+  <a href="#rules"          class="nav-item"><span class="nav-dot"></span>Pravidlá</a>
+  <a href="#observations"   class="nav-item"><span class="nav-dot"></span>Pozorovania</a>
+  <a href="#comparison"     class="nav-item"><span class="nav-dot"></span>Porovnanie</a>
+  <a href="#conclusion"     class="nav-item"><span class="nav-dot"></span>Záver</a>
+</nav>
+
+<!-- Hlavný obsah -->
+<main class="main-content">
+
+  <!-- Hero -->
+  <section class="hero-section">
+    <div class="hero-tag">Strojové učenie · AQ11</div>
+    <h1 class="hero-title">Generovanie<br/><span class="accent-glow">Pravidiel</span></h1>
+    <p class="hero-sub">Experiment s algoritmom AQ11 – induktívne učenie, symbolické pravidlá, analýza výkonu na syntetických dátach</p>
+    <div class="hero-stats">
+      <div class="hs"><span class="hs-val" data-target="94.3">0</span><span class="hs-pct">%</span><span class="hs-lbl">Presnosť</span></div>
+      <div class="hs-div"></div>
+      <div class="hs"><span class="hs-val" data-target="1000">0</span><span class="hs-lbl">Vzoriek</span></div>
+      <div class="hs-div"></div>
+      <div class="hs"><span class="hs-val" data-target="17">0</span><span class="hs-lbl">Pravidiel</span></div>
+      <div class="hs-div"></div>
+      <div class="hs"><span class="hs-val" data-target="4">0</span><span class="hs-lbl">Experimenty</span></div>
+    </div>
+  </section>
+
+  <!-- 01 Úvod -->
+  <section id="intro" class="section">
+    <div class="section-header reveal">
+      <div class="section-num">01</div>
+      <div>
+        <h2 class="section-title">Čo je AQ11?</h2>
+        <p class="section-sub">Induktívny algoritmus generovania pravidiel</p>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-icon-svg">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+        </div>
+        <h3>Definícia algoritmu</h3>
+        <p>AQ11 (AQ – Algorithm, verzia 11) je induktívny algoritmus strojového učenia vyvinutý Ryszardom Michalkskim v 70. rokoch. Patrí do kategórie <strong>symbolického učenia</strong> – namiesto čiernych skriniek generuje ľudsky čitateľné pravidlá vo forme <em>IF–THEN</em>.</p>
+        <p>Algoritmus pracuje na princípe <strong>sekvenčného pokrytia</strong>: opakovane generuje pravidlá, ktoré pokrývajú pozitívne príklady (E1) a vylučujú negatívne príklady (E2), kým nie sú pokryté všetky trénovacie dáta.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon-svg">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <h3>Účel a využitie</h3>
+        <p>AQ11 bol navrhnutý pre problémy, kde je <strong>interpretovateľnosť</strong> kľúčová – medicína, právo, manažment rizík. Na rozdiel od neurónových sietí, výstupom nie sú váhy, ale explicitné podmienky.</p>
+        <ul class="feature-list">
+          <li>Medicínska diagnostika – pravidlá pre klasifikáciu pacientov</li>
+          <li>Botanická klasifikácia – identifikácia druhov podľa príznakov</li>
+          <li>Analýza rizík – pravidlá pre úverové rozhodovanie</li>
+          <li>Výučba AI – didaktická hodnota pre pochopenie ML</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-icon-svg">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+          </svg>
+        </div>
+        <h3>Množiny E1 a E2</h3>
+        <p>Jadrom AQ11 je rozdelenie trénovacích dát na dve množiny:</p>
+        <div class="e-sets">
+          <div class="e-set e1">
+            <span class="e-label">E1 – Pozitívne príklady</span>
+            <p>Vzorky triedy, pre ktorú generujeme pravidlo. Každé pravidlo musí pokryť aspoň jeden prvok E1.</p>
+          </div>
+          <div class="e-set e2">
+            <span class="e-label">E2 – Negatívne príklady</span>
+            <p>Vzorky iných tried. Každé pravidlo musí byť konzistentné – nesmie pokryť žiadny prvok E2.</p>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-icon-svg">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <h3>Kľúčové vlastnosti</h3>
+        <div class="prop-list">
+          <div class="prop"><span class="prop-k">Typ učenia</span><span class="prop-v">Induktívne, symbolické</span></div>
+          <div class="prop"><span class="prop-k">Výstup</span><span class="prop-v">IF–THEN pravidlá</span></div>
+          <div class="prop"><span class="prop-k">Stratégia</span><span class="prop-v">Sekvenčné pokrytie</span></div>
+          <div class="prop"><span class="prop-k">Hľadanie</span><span class="prop-v">Beam search / greedy</span></div>
+          <div class="prop"><span class="prop-k">Triedy</span><span class="prop-v">Binárna / multi-class</span></div>
+          <div class="prop"><span class="prop-k">Zložitosť</span><span class="prop-v">O(n · m · k)</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 Postup -->
+  <section id="workflow" class="section">
+    <div class="section-header reveal">
+      <div class="section-num">02</div>
+      <div>
+        <h2 class="section-title">Postup experimentu</h2>
+        <p class="section-sub">Pipeline od dát po výsledky</p>
+      </div>
+    </div>
+    <div class="workflow-track">
+      <div class="wf-step">
+        <div class="wf-num">1</div>
+        <div class="wf-body">
+          <h4>Generovanie datasetu</h4>
+          <p>Syntetický dataset bol vytvorený s numerickými príznakmi (x, y ∈ [0,10]) a kategorickými príznakmi (farba vlasov, farba očí). Trieda je určená kombináciou podmienok simulujúcich reálny rozhodovací proces.</p>
+          <div class="code-block">
+            <span class="c-kw">def</span> generate_sample(i):<br/>
+            &nbsp;&nbsp;x, y = random.uniform(<span class="c-num">0</span>,<span class="c-num">10</span>), random.uniform(<span class="c-num">0</span>,<span class="c-num">10</span>)<br/>
+            &nbsp;&nbsp;hair = choice([<span class="c-str">'svetlé'</span>,<span class="c-str">'tmavé'</span>,<span class="c-str">'ryšavé'</span>])<br/>
+            &nbsp;&nbsp;cls = <span class="c-num">1</span> <span class="c-kw">if</span> x &gt; <span class="c-num">4.5</span> <span class="c-kw">and</span> y &gt; <span class="c-num">4.5</span> <span class="c-kw">else</span> <span class="c-num">0</span>
+          </div>
+        </div>
+      </div>
+      <div class="wf-connector"></div>
+      <div class="wf-step">
+        <div class="wf-num">2</div>
+        <div class="wf-body">
+          <h4>Predspracovanie</h4>
+          <p>Numerické príznaky boli normalizované (min-max škálovanie). Kategorické príznaky boli zachované v pôvodnej forme, pretože AQ11 pracuje priamo s kategóriami bez one-hot enkódovania.</p>
+        </div>
+      </div>
+      <div class="wf-connector"></div>
+      <div class="wf-step">
+        <div class="wf-num">3</div>
+        <div class="wf-body">
+          <h4>Rozdelenie na trénovaciu a testovaciu množinu</h4>
+          <p>Dataset bol rozdelený v pomere <strong>70:30</strong> (tréning:test) s fixovaným náhodným seed = 42 pre reprodukovateľnosť. Stratifikované rozdelenie zachovalo distribúciu tried.</p>
+        </div>
+      </div>
+      <div class="wf-connector"></div>
+      <div class="wf-step">
+        <div class="wf-num">4</div>
+        <div class="wf-body">
+          <h4>Generovanie pravidiel (AQ11)</h4>
+          <p>Pre každú triedu sa vykonáva cyklus: (1) výber vzorového príkladu z E1, (2) generovanie najvšeobecnejšieho pravidla pokrývajúceho vzorový príklad a vylučujúceho E2, (3) odstránenie pokrytých príkladov, (4) opakovanie, kým E1 nie je prázdna.</p>
+          <div class="code-block">
+            <span class="c-kw">while</span> E1 <span class="c-kw">is not</span> empty:<br/>
+            &nbsp;&nbsp;seed = select_seed(E1)<br/>
+            &nbsp;&nbsp;rule = generalize(seed, E2)<br/>
+            &nbsp;&nbsp;E1 = E1 - cover(rule)
+          </div>
+        </div>
+      </div>
+      <div class="wf-connector"></div>
+      <div class="wf-step">
+        <div class="wf-num">5</div>
+        <div class="wf-body">
+          <h4>Evaluácia</h4>
+          <p>Vygenerované pravidlá boli aplikované na testovaciu množinu. Pre každú vzorku sa pravidlá vyhodnocujú sekvenčne – prvé splnené pravidlo určuje predikovanú triedu. Metriky: Accuracy, Precision, Recall, F1.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 Dataset -->
+  <section id="dataset" class="section">
+    <div class="section-header reveal">
+      <div class="section-num">03</div>
+      <div>
+        <h2 class="section-title">Dataset</h2>
+        <p class="section-sub">Syntetické dáta pre experimenty AQ11</p>
+        <p style="font-size:13px;color:var(--text-dim);margin-top:6px;">Dataset obsahuje 1 000 synteticky generovaných vzoriek. V tabuľke je pre prehľadnosť zobrazená ukážková podmnožina.</p>
+      </div>
+    </div>
+    <div class="card reveal">
+      <div class="dataset-meta">
+        <div class="dm"><span class="dm-v" id="ds-rows">50</span><span class="dm-l">Vzoriek</span></div>
+        <div class="dm"><span class="dm-v">5</span><span class="dm-l">Príznakov</span></div>
+        <div class="dm"><span class="dm-v">2</span><span class="dm-l">Triedy</span></div>
+        <div class="dm"><span class="dm-v">2</span><span class="dm-l">Numerické</span></div>
+        <div class="dm"><span class="dm-v">2</span><span class="dm-l">Kategorické</span></div>
+        <div class="dm-controls">
+          <input type="text" id="tableSearch" placeholder="Hľadať…" class="search-input"/>
+          <div class="class-filter">
+            <button class="cf-btn active" data-cls="all">Všetky</button>
+            <button class="cf-btn" data-cls="0">Trieda 0</button>
+            <button class="cf-btn" data-cls="1">Trieda 1</button>
+          </div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="dataTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th class="sortable" data-col="x">x <span class="sort-icon">↕</span></th>
+              <th class="sortable" data-col="y">y <span class="sort-icon">↕</span></th>
+              <th>Vlasy</th>
+              <th>Oči</th>
+              <th>Trieda</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr><td colspan="6" class="loading-row">Načítavam dáta…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 Experimenty -->
+  <section id="experiments" class="section">
+    <div class="section-header reveal">
+      <div class="section-num">04</div>
+      <div>
+        <h2 class="section-title">Experimenty</h2>
+        <p class="section-sub">Vplyv veľkosti datasetu na výkon algoritmu</p>
+      </div>
+    </div>
+    <div class="exp-tabs reveal">
+      <button class="exp-tab active" data-exp="0">Malý (100)</button>
+      <button class="exp-tab" data-exp="1">Stredný (500)</button>
+      <button class="exp-tab" data-exp="2">Veľký (1 000)</button>
+      <button class="exp-tab" data-exp="3">So šumom</button>
+    </div>
+    <div id="expContent" class="exp-content reveal"></div>
+    <div class="card mt-2 reveal">
+      <h3>Porovnanie experimentov</h3>
+      <div class="bar-chart-wrap">
+        <canvas id="expChart" width="800" height="280"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 Výsledky -->
+  <section id="results" class="section">
+    <div class="section-header reveal">
+      <div class="section-num">05</div>
+      <div>
+        <h2 class="section-title">Výsledky</h2>
+        <p class="section-sub">Metriky klasifikácie pre najlepší experiment (1 000 vzoriek)</p>
+      </div>
+    </div>
+    <div class="metrics-grid">
+      <div class="metric-card reveal-scale">
+        <div class="metric-ring">
+          <svg viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="50"/><circle class="ring-fill" cx="60" cy="60" r="50" style="--pct:0.943"/></svg>
+          <div class="ring-val"><span class="rv" data-target="94.3">0</span><span>%</span></div>
+        </div>
+        <div class="metric-name">Accuracy</div>
+        <div class="metric-desc">Celková presnosť klasifikácie na testovacej množine</div>
+      </div>
+      <div class="metric-card reveal-scale">
+        <div class="metric-ring">
+          <svg viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="50"/><circle class="ring-fill" cx="60" cy="60" r="50" style="--pct:0.939"/></svg>
+          <div class="ring-val"><span class="rv" data-target="93.9">0</span><span>%</span></div>
+        </div>
+        <div class="metric-name">Precision</div>
+        <div class="metric-desc">Podiel správnych pozitívnych predikcií</div>
+      </div>
+      <div class="metric-card reveal-scale">
+        <div class="metric-ring">
+          <svg viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="50"/><circle class="ring-fill" cx="60" cy="60" r="50" style="--pct:0.948"/></svg>
+          <div class="ring-val"><span class="rv" data-target="94.8">0</span><span>%</span></div>
+        </div>
+        <div class="metric-name">Recall</div>
+        <div class="metric-desc">Podiel správne identifikovaných pozitívnych príkladov</div>
+      </div>
+      <div class="metric-card reveal-scale">
+        <div class="metric-ring">
+          <svg viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="50"/><circle class="ring-fill" cx="60" cy="60" r="50" style="--pct:0.943"/></svg>
+          <div class="ring-val"><span class="rv" data-target="94.3">0</span><span>%</span></div>
+        </div>
+        <div class="metric-name">F1 Score</div>
+        <div class="metric-desc">Harmonický priemer precision a recall</div>
+      </div>
+    </div>
+    <div class="card mt-2 reveal">
+      <h3>Interpretácia výsledkov</h3>
+      <p>Výsledky na veľkom datasete (1 000 vzoriek) potvrdzujú, že AQ11 dosahuje spoľahlivú presnosť na syntetických dátach s jasnou rozhodovacou hranicou. Vysoký recall (94,8 %) indikuje, že algoritmus neprehliadne väčšinu pozitívnych príkladov, čo je dôležité v medicínskych aplikáciách. Mierne nižšia precision (93,9 %) znamená niekoľko falošne pozitívnych klasifikácií v pohraničných oblastiach príznakového priestoru.</p>
+      <p>Rozdiel medzi precision a recall je minimálny (0,9 p. b.), čo svedčí o vyváženej klasifikácii bez výraznej preferencie jednej triedy.</p>
+    </div>
+    <div class="card mt-2 reveal">
+      <h3>Analýza chýb</h3>
+      <ul class="obs-list">
+        <li>Falošne pozitívne výsledky: 18 prípadov</li>
+        <li>Falošne negatívne výsledky: 14 prípadov</li>
+        <li>Najviac chýb pri hodnotách blízko hranice (x ≈ 4,5; y ≈ 4,5)</li>
+        <li>Kategorické príznaky majú menší vplyv na klasifikáciu ako numerické</li>
+      </ul>
+      <p style="margin-top:12px;">Chyby vznikajú hlavne v oblastiach, kde sa rozhodovacia hranica prekrýva alebo je nejednoznačná z dôvodu náhodnej variability príznakov.</p>
+    </div>
+  </section>
+
+  <!-- 06 Vizualizácie -->
+  <section id="visualizations" class="section">
+    <div class="section-header reveal">
+      <div class="section-num">06</div>
+      <div>
+        <h2 class="section-title">Vizualizácie</h2>
+        <p class="section-sub">Grafické znázornenie dát a výsledkov</p>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card reveal-left">
+        <h3>Scatter plot – rozdelenie tried</h3>
+        <div style="position:relative">
+          <canvas id="scatterCanvas" width="500" height="380"></canvas>
+        </div>
+        <div class="legend">
+          <span class="leg-item leg-0">&#9679; Trieda 0</span>
+          <span class="leg-item leg-1">&#9679; Trieda 1</span>
+          <span class="leg-item leg-boundary">&#8212; Hranica pravidiel</span>
+        </div>
+      </div>
+      <div class="card reveal-right">
+        <h3>Konfúzna matica – 1 000 vzoriek</h3>
+        <canvas id="confusionCanvas" width="500" height="380"></canvas>
+        <div class="cm-legend">
+          <span>TP = 290 &nbsp;|&nbsp; FP = 18 &nbsp;|&nbsp; FN = 14 &nbsp;|&nbsp; TN = 278</span>
+        </div>
+      </div>
+    </div>
+    <div class="card mt-2 reveal">
+      <h3>Vizualizácia priestoru pravidiel</h3>
+      <canvas id="ruleSpaceCanvas" width="900" height="320"></canvas>
+      <p class="canvas-note">Zobrazené pravidlá pokrývajúce numerický príznakový priestor (x, y). Každý farebný región reprezentuje jedno pravidlo.</p>
+    </div>
+  </section>
+
+  <!-- 07 Pravidlá -->
+  <section id="rules" class="section">
+    <div class="section-header reveal">
+      <div class="section-num">07</div>
+      <div>
+        <h2 class="section-title">Vygenerované pravidlá</h2>
+        <p class="section-sub">IF–THEN pravidlá extrahované algoritmom AQ11</p>
+      </div>
+    </div>
+    <div id="rulesContainer"></div>
+    <div class="card mt-2 reveal">
+      <h3>Ako čítať pravidlá?</h3>
+      <div class="rule-guide">
+        <div class="rg-item"><span class="rg-k">Support</span><span class="rg-v">Podiel trénovacích vzoriek pokrytých pravidlom</span></div>
+        <div class="rg-item"><span class="rg-k">Confidence</span><span class="rg-v">Pravdepodobnosť správnej klasifikácie pri splnení podmienky</span></div>
+        <div class="rg-item"><span class="rg-k">Coverage</span><span class="rg-v">Absolútny počet vzoriek pokrytých pravidlom</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 Pozorovania -->
+  <section id="observations" class="section">
+    <div class="section-header reveal">
+      <div class="section-num">08</div>
+      <div>
+        <h2 class="section-title">Pozorovania a analýza</h2>
+        <p class="section-sub">Detailná diskusia výsledkov</p>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card obs-card">
+        <div class="obs-icon-svg">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+          </svg>
+        </div>
+        <h3>Prečo je presnosť vysoká?</h3>
+        <p>Syntetické dáta boli generované s jasnou lineárnou rozhodovacou hranicou (x > 4,5 AND y > 4,5). AQ11 dokáže túto hranicu presne zachytiť pomocou niekoľkých pravidiel. Keďže dáta neobsahujú šum ani odľahlé hodnoty, algoritmus nachádza globálne konzistentné pravidlá.</p>
+        <p>Na reálnych dátach so šumom by sme očakávali pokles presnosti o 5–15 %, pretože pravidlá sa môžu preučiť na trénovacích príkladoch.</p>
+      </div>
+      <div class="card obs-card">
+        <div class="obs-icon-svg">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <h3>Obmedzenia syntetických dát</h3>
+        <p>Výsledky treba interpretovať s ohľadom na ideálny charakter datasetu:</p>
+        <ul class="obs-list">
+          <li>Žiadny šum v dátach (reálne dáta majú merací šum)</li>
+          <li>Jednoduchá lineárna hranica tried</li>
+          <li>Rovnomerné rozdelenie príznakov</li>
+          <li>Žiadne chýbajúce hodnoty</li>
+          <li>Malý počet tried (binárna klasifikácia)</li>
+        </ul>
+      </div>
+      <div class="card obs-card">
+        <div class="obs-icon-svg">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </div>
+        <h3>Výhody interpretovateľnosti</h3>
+        <p>Oproti modelom typu „čierna skrinka" má AQ11 zásadnú výhodu – výstup je priamo zrozumiteľný pre ľudí. Lekár môže overiť pravidlo „IF vek > 65 AND systolický tlak > 140 THEN riziko = vysoké" a posúdiť jeho medicínsku validitu. Regulačné požiadavky (GDPR Čl. 22, EU AI Act) čoraz viac vyžadujú vysvetliteľné systémy umelej inteligencie.</p>
+      </div>
+      <div class="card obs-card">
+        <div class="obs-icon-svg">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M18 20V10M12 20V4M6 20v-6"/>
+          </svg>
+        </div>
+        <h3>AQ11 vs. neurónové siete</h3>
+        <p>MLP neurónová sieť dosahuje na rovnakom datasete ~97 % presnosti, ale za cenu úplnej neinterpretovateľnosti. AQ11 s presnosťou 94,3 % ponúka kompromis: mierne nižšia presnosť, ale plná transparentnosť. V kritických aplikáciách (medicína, právo) je tento kompromis opodstatnený.</p>
+        <p>AQ11 tiež vyžaduje menej výpočtových zdrojov a nepotrebuje grafické akcelerátory – dôležité pri nasadení v prostrediach s obmedzenými zdrojmi.</p>
+      </div>
+    </div>
+    <div class="card mt-2 reveal">
+      <h3>Závislosť výkonu od veľkosti datasetu</h3>
+      <p>Z experimentov vyplýva jasný trend: s rastúcim počtom trénovacích vzoriek sa presnosť zvyšuje, ale tempo rastu klesá (klesajúce výnosy). Prechod zo 100 na 500 vzoriek prináša nárast o 4,6 percentuálneho bodu, prechod z 500 na 1 000 vzoriek iba 3,0 p. b. Toto je typické správanie väčšiny algoritmov strojového učenia – dáta sú najcennejšie vtedy, keď ich je málo.</p>
+      <p>Počet vygenerovaných pravidiel rastie sublineárne: 6 → 11 → 17 pravidiel pre 100 → 500 → 1 000 vzoriek. Väčší dataset odhalí jemnejšie vzory, ktoré si vyžadujú špecializovanejšie pravidlá pokrývajúce hraničné prípady.</p>
+      <p>Čas trénovania rastie lineárne (12 ms → 48 ms → 187 ms), čo je v súlade s teoretickou zložitosťou O(n·m·k).</p>
+    </div>
+    <div class="card mt-2 reveal">
+      <h3>Limitácie experimentu</h3>
+      <ul class="obs-list">
+        <li>Syntetické dáta – nereprezentujú plne realitu</li>
+        <li>Iba dve triedy (binárna klasifikácia)</li>
+        <li>Jednoduchá lineárna rozhodovacia hranica</li>
+        <li>Bez šumu (okrem jedného experimentu)</li>
+        <li>Žiadne chýbajúce hodnoty v datasete</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 09 Porovnanie -->
+  <section id="comparison" class="section">
+    <div class="section-header reveal">
+      <div class="section-num">09</div>
+      <div>
+        <h2 class="section-title">Porovnanie algoritmov</h2>
+        <p class="section-sub">AQ11 vs. Decision Tree vs. Neurónová sieť</p>
+      </div>
+    </div>
+    <div class="card reveal">
+      <div class="comp-table-wrap">
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th>Vlastnosť</th><th>AQ11</th><th>Decision Tree</th><th>Neurónová sieť</th>
+            </tr>
+          </thead>
+          <tbody id="compTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="grid-2 mt-2">
+      <div class="card reveal-left">
+        <h3>AQ11 vs. Decision Tree (C4.5)</h3>
+        <p>Oba algoritmy produkujú interpretovateľné pravidlá. Decision Tree buduje hierarchickú stromovú štruktúru, zatiaľ čo AQ11 generuje plochú sadu nezávislých pravidiel (rule set). Pravidlá AQ11 sú zvyčajne zrozumiteľnejšie – nevyžadujú sledovanie cesty v strome.</p>
+        <p>C4.5 je typicky rýchlejší a škálovateľnejší, AQ11 generuje kompaktnejšie pravidlá s vyššou spoľahlivosťou. Na malom datasete (100 vzoriek) AQ11 prekonáva C4.5 o ~2 %, na väčších datasetoch sú výsledky porovnateľné.</p>
+        <div class="mini-bar">
+          <div class="mb-item"><span>AQ11</span><div class="mb-bar" style="--w:94.3%"><span>94,3 %</span></div></div>
+          <div class="mb-item"><span>C4.5</span><div class="mb-bar" style="--w:93.1%"><span>93,1 %</span></div></div>
+        </div>
+      </div>
+      <div class="card reveal-right">
+        <h3>AQ11 vs. Neurónová sieť (MLP)</h3>
+        <p>MLP dosahuje najvyššiu presnosť (97,1 %), ale je kompletne neinterpretovateľná. Nie je možné vysvetliť, prečo sieť zaradí konkrétnu vzorku do danej triedy. AQ11 je o 2,8 p. b. menej presný, ale ponúka plnú transparentnosť.</p>
+        <p>MLP vyžaduje nastavovanie hyperparametrov, veľké množstvo dát a výpočtové zdroje. AQ11 beží „z balíka" s minimálnymi nastaveniami aj na základnom hardvéri.</p>
+        <div class="mini-bar">
+          <div class="mb-item"><span>MLP</span><div class="mb-bar" style="--w:97.1%"><span>97,1 %</span></div></div>
+          <div class="mb-item"><span>AQ11</span><div class="mb-bar" style="--w:94.3%"><span>94,3 %</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 Záver -->
+  <section id="conclusion" class="section">
+    <div class="section-header reveal">
+      <div class="section-num">10</div>
+      <div>
+        <h2 class="section-title">Záver</h2>
+        <p class="section-sub">Zhrnutie, silné stránky, slabiny, perspektívy</p>
+      </div>
+    </div>
+    <div class="grid-3">
+      <div class="card concl-card positive">
+        <div class="concl-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <h3>Silné stránky</h3>
+        </div>
+        <ul class="concl-list">
+          <li>Plná interpretovateľnosť výstupu</li>
+          <li>Jednoduchá implementácia a nasadenie</li>
+          <li>Nízke výpočtové nároky</li>
+          <li>Vhodné pre regulované odvetvia</li>
+          <li>Robustnosť na malých datasetoch</li>
+          <li>Žiadne hyperparametre (okrem šírky lúča)</li>
+        </ul>
+      </div>
+      <div class="card concl-card negative">
+        <div class="concl-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <h3>Slabé stránky</h3>
+        </div>
+        <ul class="concl-list">
+          <li>Nižšia presnosť oproti hlbokému učeniu</li>
+          <li>Problematická škálovateľnosť na veľkých dátach</li>
+          <li>Citlivosť na šum v trénovacích dátach</li>
+          <li>Ťažkosti s kontinuálnymi príznakmi</li>
+          <li>Pravidlá môžu byť redundantné</li>
+          <li>Ručná diskretizácia numerických príznakov</li>
+        </ul>
+      </div>
+      <div class="card concl-card neutral">
+        <div class="concl-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          <h3>Reálne využitie</h3>
+        </div>
+        <ul class="concl-list">
+          <li>Medicínska diagnostika s vysvetlením</li>
+          <li>Právne a súladové systémy (compliance)</li>
+          <li>Výučba konceptov strojového učenia</li>
+          <li>Automatizácia znalostných báz</li>
+          <li>Hybridné systémy AI (pravidlá + ML)</li>
+          <li>Systémy vyžadujúce záznam rozhodnutí</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card mt-2 conclusion-final reveal">
+      <h3>Záverečné zhodnotenie</h3>
+      <p>Experiment potvrdil, že AQ11 je spoľahlivý algoritmus pre klasifikačné úlohy s jasne definovanou rozhodovacou hranicou. Na syntetických dátach dosahuje presnosť 94,3 %, čo je konkurencieschopné s modernými algoritmami pri zachovaní plnej interpretovateľnosti.</p>
+      <p>Kľúčovým zistením je, že v ére regulovanej umelej inteligencie (EU AI Act, GDPR) majú symbolické algoritmy, ako je AQ11, opätovne rastúci praktický význam. Nie sú náhradou za hlboké učenie v úlohách vyžadujúcich najvyššiu presnosť, ale tvoria dôležitú súčasť portfólia nástrojov strojového učenia – najmä tam, kde je nevyhnutné vysvetliť rozhodnutie regulátorovi alebo pacientovi.</p>
+      <p>Budúce smerovanie výskumu: kombinácia AQ11 s technikami výberu príznakov (PCA, vzájomná informácia) a integrácia do rámcov XAI (Explainable AI) pre produkčné nasadenie.</p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div>AQ11 Dashboard · Strojové učenie · <span id="footerYear"></span></div>
+    <div>Generované experimentálne dáta · Akademický projekt</div>
+  </footer>
+
+</main>
+
+<script src="script.js"></script>
+<script>
+(function () {
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════
+   1.  GULE  –  SMOOTH PHYSICS
+   • position:fixed  →  transform:translate() každý frame
+   • tick  = vlastný pomalý čítač (nie DOMHighResTimeStamp)
+   • vy    = vertikálna rýchlosť narastá zo scroll-delta
+   • decay = 0.90  →  gule sa plynule zastavia ~20 framov po
+     zastavení scrollu (žiadne skákanie)
+   • wrap  : keď guľa vyletí za okraj, objaví sa na druhej strane
+══════════════════════════════════════════════════════════════ */
+
+const THEME_X = {
+  blue:      [-12, 82, 28, 56, 78, 20],
+  green:     [ -8, 86, 43, 63, 80, 32],
+  turquoise: [-16, 80, 10, 48, 73,  6],
+  orange:    [ -6, 88, 38, 58, 76, 24],
+  red:       [-12, 82, 22, 52, 82, 14],
+  lava:      [ -4, 90, 33, 60, 74,  8],
+  purple:    [-18, 78, 16, 50, 86, 36],
+};
+const SIZES = [680, 460, 560, 340, 300, 220];
+const orbs  = [];
+let   tick  = 0;
+
+function initOrbs(color) {
+  const xList = THEME_X[color] || THEME_X.blue;
+  const vp    = window.innerHeight;
+  document.querySelectorAll('.orb').forEach((el, i) => {
+    const size = SIZES[i] || 300;
+    orbs[i] = {
+      el,
+      size,
+      xBase : xList[i] ?? (i * 18 - 10),   /* % viewport width  */
+      y     : vp * 0.05 + Math.random() * vp * 0.9,
+      vy    : 0,
+      phase : Math.random() * Math.PI * 2,
+      freqX : 0.22 + Math.random() * 0.18,  /* Hz-like (cycles/sec @60fps) */
+      freqY : 0.16 + Math.random() * 0.14,
+      ampX  : 32   + Math.random() * 38,
+      ampY  : 26   + Math.random() * 32,
+    };
+    el.style.cssText += ';left:0;top:0;right:unset;bottom:unset;width:'+size+'px;height:'+size+'px';
+  });
+}
+
+/* ── scroll accumulator ───────────────────────────────────── */
+let lastSY     = window.scrollY;
+let scrollAccum = 0;
+
+window.addEventListener('scroll', () => {
+  const y = window.scrollY;
+  scrollAccum += y - lastSY;
+  lastSY = y;
+  if (y > 80) document.getElementById('scrollInd')?.classList.add('hidden');
+}, { passive: true });
+
+/* ── main RAF loop ────────────────────────────────────────── */
+function orbLoop() {
+  tick++;
+  const vp    = window.innerHeight;
+  const vw    = window.innerWidth;
+
+  /* consume accumulated scroll this frame */
+  const delta  = scrollAccum;
+  scrollAccum  = 0;
+
+  /* amplify: 1 px scroll → 4 px velocity added to orbs */
+  const push = delta * 4;
+
+  orbs.forEach((s, i) => {
+    if (!s) return;
+
+    /* 1 – apply push, then decay */
+    s.vy += push * (1.0 + i * 0.09);   /* each orb slightly different */
+    s.vy *= 0.90;                        /* smooth deceleration */
+    if (Math.abs(s.vy) < 0.05) s.vy = 0;
+
+    /* 2 – move */
+    s.y += s.vy;
+
+    /* 3 – wrap: orb exits bottom  →  enters from top (and vice-versa) */
+    const pad = s.size * 0.35;
+    if (s.vy > 0 && s.y > vp + pad) {
+      s.y = -s.size - pad * 0.4;
+    } else if (s.vy < 0 && s.y + s.size < -pad) {
+      s.y = vp + pad * 0.4;
+    }
+
+    /* 4 – float: sine wave, suppressed when moving fast */
+    const fs = Math.max(0, 1 - Math.abs(s.vy) / 55);
+    const t  = tick / 60;                /* seconds */
+    const fx = Math.sin(t * s.freqX * Math.PI * 2 + s.phase)           * s.ampX * fs;
+    const fy = Math.cos(t * s.freqY * Math.PI * 2 + s.phase + 1.4)     * s.ampY * fs;
+
+    /* 5 – write transform */
+    const x = (s.xBase / 100) * vw - s.size / 2;
+    s.el.style.transform = `translate(${(x+fx).toFixed(1)}px,${(s.y+fy).toFixed(1)}px)`;
+  });
+
+  requestAnimationFrame(orbLoop);
+}
+
+/* theme-switch: only update xBase, no y jump */
+function applyPos(color) {
+  const xList = THEME_X[color] || THEME_X.blue;
+  orbs.forEach((s, i) => { if (s) s.xBase = xList[i] ?? s.xBase; });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   2.  SCROLL REVEAL
+══════════════════════════════════════════════════════════════ */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    const el = entry.target;
+    el.classList.add('visible');
+    el.querySelectorAll('.card:not(.visible)').forEach((c, i) =>
+      setTimeout(() => c.classList.add('visible'), i * 90));
+    el.querySelectorAll('.wf-step:not(.visible)').forEach((s, i) =>
+      setTimeout(() => s.classList.add('visible'), i * 120));
+    io.unobserve(el);
+  });
+}, { threshold: 0.07, rootMargin: '0px 0px -50px 0px' });
+
+['.reveal','.reveal-left','.reveal-right','.reveal-scale','.reveal-blur',
+ '.section-header','.grid-2','.grid-3','.workflow-track','.obs-card',
+ '.metric-card','.concl-card','.mini-bar']
+.forEach(sel => document.querySelectorAll(sel).forEach(el => io.observe(el)));
+
+document.querySelectorAll('.wf-step').forEach((el, i) => {
+  const wio = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      setTimeout(() => el.classList.add('visible'), i * 110);
+      wio.unobserve(el);
+    });
+  }, { threshold: 0.1 });
+  wio.observe(el);
+});
+
+/* ══════════════════════════════════════════════════════════════
+   3.  TÉMA (dark / light)
+══════════════════════════════════════════════════════════════ */
+function initTheme() {
+  const btn   = document.getElementById('themeToggle');
+  const saved = localStorage.getItem('aq11-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  btn?.addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('aq11-theme', next);
+    if (window.redrawCanvases) window.redrawCanvases();
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   4.  FAREBNÁ PALETA
+══════════════════════════════════════════════════════════════ */
+function setColor(c) {
+  document.documentElement.setAttribute('data-color', c);
+  document.querySelectorAll('.swatch').forEach(s =>
+    s.classList.toggle('active', s.dataset.color === c));
+  applyPos(c);
+}
+
+function initPalette() {
+  const btn   = document.getElementById('paletteBtn');
+  const panel = document.getElementById('palettePanel');
+  const saved = localStorage.getItem('aq11-color') || 'blue';
+  setColor(saved);                          /* orbs already init – safe */
+
+  btn?.addEventListener('click', e => { e.stopPropagation(); panel.classList.toggle('open'); });
+  document.addEventListener('click', () => panel.classList.remove('open'));
+  panel.addEventListener('click', e => e.stopPropagation());
+
+  document.querySelectorAll('.swatch').forEach(sw => {
+    sw.addEventListener('click', () => {
+      setColor(sw.dataset.color);
+      localStorage.setItem('aq11-color', sw.dataset.color);
+      panel.classList.remove('open');
+      setTimeout(() => { if (window.redrawCanvases) window.redrawCanvases(); }, 150);
+    });
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   5.  BOČNÁ NAVIGÁCIA (scroll spy)
+══════════════════════════════════════════════════════════════ */
+function initNav() {
+  const secs  = document.querySelectorAll('section[id]');
+  const items = document.querySelectorAll('.nav-item');
+  window.addEventListener('scroll', () => {
+    let cur = '';
+    secs.forEach(s => { if (window.scrollY >= s.offsetTop - 130) cur = s.id; });
+    items.forEach(ni => ni.classList.toggle('active', ni.getAttribute('href') === '#' + cur));
+  }, { passive: true });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ŠTART  –  poradie je dôležité:
+   initOrbs → start loop → initTheme / initPalette / initNav
+══════════════════════════════════════════════════════════════ */
+initOrbs(localStorage.getItem('aq11-color') || 'blue');
+requestAnimationFrame(orbLoop);
+
+document.getElementById('footerYear').textContent = new Date().getFullYear();
+
+})();
+</script>
+</body>
+</html>
