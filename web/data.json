@@ -1,0 +1,400 @@
+{
+  "_meta": {
+    "generated_at": "2026-05-11T12:24:39.100559",
+    "project": "AQ11 Rule Learning",
+    "version": "1.0.0"
+  },
+  "dataset": {
+    "metadata": {
+      "n_samples": 1000,
+      "noise_ratio": 0.0,
+      "seed": 42,
+      "boundary_x": 4.5,
+      "boundary_y": 4.5,
+      "class_counts": {
+        "class_0": 550,
+        "class_1": 450
+      }
+    },
+    "feature_names": [
+      "x",
+      "y",
+      "hair",
+      "eyes"
+    ],
+    "sample": [
+      {
+        "x": 1.8901,
+        "y": 2.6478,
+        "hair": 0.0,
+        "eyes": 2.0,
+        "class": 0
+      },
+      {
+        "x": 3.1948,
+        "y": 2.0528,
+        "hair": 0.0,
+        "eyes": 0.0,
+        "class": 0
+      },
+      {
+        "x": 3.8711,
+        "y": 0.2606,
+        "hair": 0.0,
+        "eyes": 0.0,
+        "class": 0
+      },
+      {
+        "x": 6.7224,
+        "y": 7.2402,
+        "hair": 0.0,
+        "eyes": 2.0,
+        "class": 1
+      },
+      {
+        "x": 3.8241,
+        "y": 3.4294,
+        "hair": 1.0,
+        "eyes": 2.0,
+        "class": 0
+      },
+      {
+        "x": 5.4478,
+        "y": 7.7021,
+        "hair": 1.0,
+        "eyes": 2.0,
+        "class": 1
+      },
+      {
+        "x": 4.9665,
+        "y": 7.503,
+        "hair": 1.0,
+        "eyes": 2.0,
+        "class": 1
+      },
+      {
+        "x": 1.6064,
+        "y": 1.4875,
+        "hair": 0.0,
+        "eyes": 1.0,
+        "class": 0
+      },
+      {
+        "x": 4.8659,
+        "y": 3.4494,
+        "hair": 0.0,
+        "eyes": 0.0,
+        "class": 0
+      },
+      {
+        "x": 2.9217,
+        "y": 2.1747,
+        "hair": 0.0,
+        "eyes": 0.0,
+        "class": 0
+      },
+      {
+        "x": 1.2834,
+        "y": 1.0491,
+        "hair": 0.0,
+        "eyes": 1.0,
+        "class": 0
+      },
+      {
+        "x": 4.998,
+        "y": 5.0936,
+        "hair": 1.0,
+        "eyes": 1.0,
+        "class": 1
+      },
+      {
+        "x": 5.3126,
+        "y": 7.339,
+        "hair": 1.0,
+        "eyes": 1.0,
+        "class": 1
+      },
+      {
+        "x": 6.9221,
+        "y": 5.8326,
+        "hair": 1.0,
+        "eyes": 0.0,
+        "class": 1
+      },
+      {
+        "x": 0.9517,
+        "y": 2.5745,
+        "hair": 0.0,
+        "eyes": 1.0,
+        "class": 0
+      },
+      {
+        "x": 6.9051,
+        "y": 7.8356,
+        "hair": 1.0,
+        "eyes": 0.0,
+        "class": 1
+      },
+      {
+        "x": 2.9499,
+        "y": 5.9479,
+        "hair": 0.0,
+        "eyes": 0.0,
+        "class": 0
+      },
+      {
+        "x": 7.8527,
+        "y": 6.3967,
+        "hair": 0.0,
+        "eyes": 0.0,
+        "class": 1
+      },
+      {
+        "x": 3.98,
+        "y": 2.4675,
+        "hair": 1.0,
+        "eyes": 1.0,
+        "class": 0
+      },
+      {
+        "x": 5.2615,
+        "y": 1.6601,
+        "hair": 0.0,
+        "eyes": 1.0,
+        "class": 0
+      }
+    ]
+  },
+  "rules": [
+    {
+      "conditions": [
+        "y > 4.33",
+        "x > 4.62",
+        "eyes > 0.00",
+        "x <= 6.76",
+        "hair <= 0.00"
+      ],
+      "conclusion": "class = 1",
+      "coverage_pct": 18.6,
+      "confidence_pct": 100.0,
+      "n_covered": 67
+    },
+    {
+      "conditions": [
+        "y > 4.96",
+        "x > 4.62",
+        "hair <= 0.00",
+        "eyes <= 0.00"
+      ],
+      "conclusion": "class = 1",
+      "coverage_pct": 16.9,
+      "confidence_pct": 100.0,
+      "n_covered": 61
+    },
+    {
+      "conditions": [
+        "y > 4.96",
+        "x > 4.62",
+        "eyes > 0.00",
+        "hair > 0.00"
+      ],
+      "conclusion": "class = 1",
+      "coverage_pct": 31.7,
+      "confidence_pct": 100.0,
+      "n_covered": 114
+    },
+    {
+      "conditions": [
+        "y > 4.96",
+        "x > 4.62",
+        "eyes > 0.00",
+        "hair <= 0.00"
+      ],
+      "conclusion": "class = 1",
+      "coverage_pct": 31.4,
+      "confidence_pct": 100.0,
+      "n_covered": 113
+    },
+    {
+      "conditions": [
+        "y > 4.96",
+        "x > 4.62",
+        "hair > 0.00",
+        "eyes <= 0.00"
+      ],
+      "conclusion": "class = 1",
+      "coverage_pct": 13.9,
+      "confidence_pct": 100.0,
+      "n_covered": 50
+    },
+    {
+      "conditions": [
+        "x > 5.07",
+        "y > 4.33",
+        "hair > 0.00",
+        "eyes <= 0.00"
+      ],
+      "conclusion": "class = 1",
+      "coverage_pct": 14.7,
+      "confidence_pct": 96.4,
+      "n_covered": 53
+    },
+    {
+      "conditions": [
+        "x > 4.62",
+        "y > 4.33",
+        "hair <= 0.00",
+        "x <= 6.76"
+      ],
+      "conclusion": "class = 1",
+      "coverage_pct": 27.8,
+      "confidence_pct": 98.0,
+      "n_covered": 100
+    },
+    {
+      "conditions": [
+        "x > 4.62",
+        "y > 4.33",
+        "eyes > 0.00",
+        "hair <= 0.00"
+      ],
+      "conclusion": "class = 1",
+      "coverage_pct": 32.2,
+      "confidence_pct": 99.1,
+      "n_covered": 116
+    },
+    {
+      "conditions": [
+        "x > 4.62",
+        "y > 4.33",
+        "eyes > 0.00",
+        "hair > 0.00"
+      ],
+      "conclusion": "class = 1",
+      "coverage_pct": 34.2,
+      "confidence_pct": 98.4,
+      "n_covered": 123
+    },
+    {
+      "conditions": [
+        "x > 4.02",
+        "y > 4.96",
+        "hair <= 0.00",
+        "eyes <= 1.00",
+        "y <= 6.80"
+      ],
+      "conclusion": "class = 1",
+      "coverage_pct": 21.9,
+      "confidence_pct": 97.5,
+      "n_covered": 79
+    },
+    {
+      "conditions": [
+        "y > 4.96",
+        "x > 4.02",
+        "eyes > 0.00",
+        "y <= 6.80"
+      ],
+      "conclusion": "class = 1",
+      "coverage_pct": 34.4,
+      "confidence_pct": 96.1,
+      "n_covered": 124
+    },
+    {
+      "conditions": [
+        "x > 4.62",
+        "y > 4.33",
+        "x <= 5.56",
+        "hair > 0.00"
+      ],
+      "conclusion": "class = 1",
+      "coverage_pct": 9.7,
+      "confidence_pct": 94.6,
+      "n_covered": 35
+    }
+  ],
+  "metrics": {
+    "TP": 88,
+    "TN": 105,
+    "FP": 5,
+    "FN": 2,
+    "accuracy": 0.965,
+    "precision": 0.9462,
+    "recall": 0.9778,
+    "f1_score": 0.9617,
+    "specificity": 0.9545,
+    "fp_rate": 0.0455,
+    "fn_rate": 0.0222
+  },
+  "experiments": {
+    "size_experiment": [
+      {
+        "size": 160,
+        "accuracy": 0.9688,
+        "precision": 0.9375,
+        "recall": 1.0,
+        "f1_score": 0.9677,
+        "n_rules": 4
+      },
+      {
+        "size": 400,
+        "accuracy": 0.9875,
+        "precision": 0.9744,
+        "recall": 1.0,
+        "f1_score": 0.987,
+        "n_rules": 6
+      },
+      {
+        "size": 800,
+        "accuracy": 0.9875,
+        "precision": 0.9865,
+        "recall": 0.9865,
+        "f1_score": 0.9865,
+        "n_rules": 3
+      },
+      {
+        "size": 1000,
+        "accuracy": 0.965,
+        "precision": 0.9462,
+        "recall": 0.9778,
+        "f1_score": 0.9617,
+        "n_rules": 12
+      },
+      {
+        "size": 1800,
+        "accuracy": 0.9972,
+        "precision": 1.0,
+        "recall": 0.9938,
+        "f1_score": 0.9969,
+        "n_rules": 2
+      }
+    ],
+    "noise_experiment": [
+      {
+        "noise": 0.0,
+        "accuracy": 0.965,
+        "n_rules": 12
+      },
+      {
+        "noise": 0.05,
+        "accuracy": 0.64,
+        "n_rules": 2
+      },
+      {
+        "noise": 0.1,
+        "accuracy": 0.755,
+        "n_rules": 12
+      },
+      {
+        "noise": 0.2,
+        "accuracy": 0.605,
+        "n_rules": 7
+      },
+      {
+        "noise": 0.3,
+        "accuracy": 0.54,
+        "n_rules": 12
+      }
+    ]
+  }
+}
